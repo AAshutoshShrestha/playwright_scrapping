@@ -3,10 +3,21 @@ from playwright.async_api import async_playwright
 import pandas as pd
 from datetime import datetime
 
-async def scrape_floor_sheet(page, max_pages=5):
+async def scrape_floor_sheet(page, max_pages=5, items_per_page=20):
     """Scrape floor sheet data from Nepal Stock Exchange."""
     print("Starting scraping...")
     data = []   # Stores scrap data
+    
+    # Select the desired option
+    await page.wait_for_selector('.table__perpage select', timeout=5000)
+    await page.select_option('.table__perpage select', str(items_per_page))
+
+    # click filter button
+    await page.click('button.box__filter--search')
+
+    # Wait for the table to reload with new settings
+    await asyncio.sleep(2) 
+    print(f"Filter data set to {items_per_page}")
     
     for page_num in range(1, max_pages + 1):
         print(f"Scraping page {page_num}...")
@@ -14,7 +25,7 @@ async def scrape_floor_sheet(page, max_pages=5):
         # Wait for the table to load
         await page.wait_for_selector('app-floor-sheet table.table')
         
-        # Extract table rows
+        # Table rows
         rows = await page.query_selector_all('app-floor-sheet table.table tbody tr')
         
         for row in rows:
@@ -65,7 +76,7 @@ async def main():
             await page.wait_for_selector('app-floor-sheet', timeout=30000)
             
             # Scrape data
-            floor_sheet_data = await scrape_floor_sheet(page)   # Default scrap max_pages 5
+            floor_sheet_data = await scrape_floor_sheet(page,3,50)   # Default scrap max_pages 5 & item_per_page 20
             
             # Create DataFrame and save to CSV
             if floor_sheet_data:
